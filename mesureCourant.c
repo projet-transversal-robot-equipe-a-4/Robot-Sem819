@@ -1,13 +1,13 @@
-int mesureCourant(){
+float mesureCourant(){
 		sfr16 ADC0 = 0xBE;
 		float Mesure_courant;
 		float Courant;
 
 		void InitCourant(){
-			WDTCN = 0xDE;   // Dévalidation du watchdog 
+			WDTCN = 0xDE;   // DÃ©validation du watchdog 
 			WDTCN = 0xAD;
 			OSCXCN &=0x00; // reset de EXT Oscillator
-			OSCXCN |= 0x67;	//EXT Oscillator	(Bit4: divisé 2)
+			OSCXCN |= 0x67;	//EXT Oscillator	(Bit4: divisÃ© 2)
 			while((OSCXCN & 0x80) != 0x80) {}
 			OSCICN |= 0x08; // enable externate oscillator
 			OSCICN &= 0xFB; // disable internal osci
