@@ -198,7 +198,7 @@ void Encodage_uart0(){
 	int cur_len;
 	char char_putty;
 	char * temp;
-	char commande[8];
+	char commande[40];
 	char type[8];
 	char angle[8];
 	char commande_valeur[8];
@@ -206,6 +206,9 @@ void Encodage_uart0(){
 	char vitesse1_tmp[8];
 	char vitesse2_tmp[8];
 	char sens_rotation;
+	char X[8];
+	char Y[8];
+	
 	
 	char_putty = SBUF0;
 	cur_len = strlen(str_putty);
@@ -320,10 +323,23 @@ void Encodage_uart0(){
 				Delay_milli(test_valeur*8);
 				send_string1("stop\r");
 				}
+		else if (str_putty[0] == 'G' && epreuve) {
+			sscanf(str_putty, "%s X:%s Y:%s A:%s",commande,X,Y,angle);
+			strcpy(commande,"digo 1 : ");
+			strcat(commande,X);
+			strcat(commande," : ");
+			strcat(commande,vitesse1);
+			strcat(commande," 2 : ");
+			strcat(commande,X);
+			strcat(commande," : ");
+			strcat(commande,vitesse2);
+			strcat(commande,"\r");
+			send_string1(commande);
+		}
 			
 	// servomoteur 
 		else if (str_putty[0] == 'C' && str_putty[1] == 'S' && epreuve){
-					sscanf(str_putty, "%s %s %s : %s",commande,type,angle, commande_valeur);
+					sscanf(str_putty, "%s %s %s:%s",commande,type,angle, commande_valeur);
 					if(strstr(commande_valeur, "-")) {
 						sscanf(commande_valeur,"-%s",commande_valeur);
 						test_valeur = - atoi(commande_valeur);
