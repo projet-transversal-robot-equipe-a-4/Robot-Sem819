@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 sfr16 RCAP4 = 0xE4;
-
+sfr16 RCAP2 = 0xCA;
 bit epreuve = 0;
 char vitesse1[8]= "20";
 char vitesse2[8]= "20";
@@ -73,7 +73,7 @@ void config_UART1(){
 	SCON1 |= 0x50;
 }	
 
-void config_Timers(){
+void config_Timer_1(){
 	CKCON|=0x10;
 	PCON |= 0x90;
 	TH1 = 184;
@@ -85,6 +85,10 @@ void config_Timers(){
 void config_Comparator(){
 	CPT0CN = 0x80;
 }
+void config_Timer_2(){
+	CKCON &= ~0x20;
+	TR2 = 1;
+}
 void config_Timer_3(){
 	TMR3CN = 0x02;
 }
@@ -92,28 +96,18 @@ void config_Timer_4()
 {
 	T4CON &= ~0xC3;
 	RCAP4 = 62771; //De base position au centre (0°)
-	TL4 = RCAP4L;
-	TH4 = RCAP4H;
 	T4CON |= 0x04;
 }
 
-void Delay(unsigned int millis)
+void Delay_milli(unsigned int millis)
 {
     unsigned int i;
-    CKCON &= ~0x40;
-    T4CON = 0;
-    RCAP4 = (65536 - (22118400 / (12 * 1000)));
-    TL4 = RCAP4L;
-    TH4 = RCAP4H;
-    
-    T4CON |= 0x04;
-    
+    RCAP2 = (65536 - (22118400 / (12 * 1000)));
+		TF2 = 0;
     for (i = 0; i < millis; i++)
     {
-        while((T4CON & 0x80) == 0)
-        {
-            T4CON &= ~0x80;
-        }
+        while(TF2 == 0){}
+				TF2 = 0;
     }
 }
 
@@ -286,28 +280,28 @@ void Encodage_uart0(){
 			strcpy(vitesse1_tmp,"-15");
 			strcpy(vitesse2_tmp,"15");
 			deplacement(vitesse1_tmp,vitesse2_tmp);
-			Delay(600);
+			Delay_milli(745);
 			send_string1("stop\r");
 		}
 		else if (strcmp(str_putty, "RG\r") == 0 && epreuve){
 				strcpy(vitesse1_tmp,"15");
 				strcpy(vitesse2_tmp,"-15");
 				deplacement(vitesse1_tmp,vitesse2_tmp);
-				Delay(600);
+				Delay_milli(745);
 				send_string1("stop\r");
 		}
 		else if (strcmp(str_putty, "RCG\r") == 0 && epreuve){
 				strcpy(vitesse1_tmp,"15");
 				strcpy(vitesse2_tmp,"-15");
 				deplacement(vitesse1_tmp,vitesse2_tmp);
-				Delay(1200);
+				Delay_milli(1350);
 				send_string1("stop\r");
 		}
 		else if (strcmp(str_putty, "RCD\r") == 0 && epreuve){
 				strcpy(vitesse1_tmp,"-15");
 				strcpy(vitesse2_tmp,"15");
 				deplacement(vitesse1_tmp,vitesse2_tmp);
-				Delay(1200);
+				Delay_milli(1350);
 				send_string1("stop\r");
 		}
 		else if (str_putty[0] == 'R' && str_putty[1] == 'A' && epreuve){
@@ -323,17 +317,7 @@ void Encodage_uart0(){
 					send_string0("\r\n#\r\n>");
 				}
 				deplacement(vitesse1_tmp,vitesse2_tmp);
-				Delay(test_valeur*5);
-				send_string1("stop\r");
-				}
-				
-		else if (str_putty[0] == 'R' && epreuve){
-				sscanf(str_putty, "%s %s",commande,commande_valeur);
-				test_valeur = atoi(commande_valeur);
-				strcpy(vitesse1_tmp,"15");
-				strcpy(vitesse2_tmp,"-15");
-				deplacement(vitesse1_tmp,vitesse2_tmp);
-				Delay(test_valeur);
+				Delay_milli(test_valeur*8);
 				send_string1("stop\r");
 				}
 			
@@ -347,7 +331,7 @@ void Encodage_uart0(){
 						test_valeur = atoi(commande_valeur);
 					}
 					servomoteur_H(test_valeur);
-					send_string0("AS H\r\n>");
+					send_string0("\r\nAS H\r\n>");
 		}
 	
 	// telemetre
@@ -358,7 +342,7 @@ void Encodage_uart0(){
 		else if (str_putty[0] == 'M' && str_putty[1] == 'I' && epreuve){
 			AnalogEntree();
 			sprintf(commande_valeur,"%.3f",Courant);
-			send_string0("Courant instantané : ");
+			send_string0("Courant instantane : ");
 			send_string0(commande_valeur);
 			send_string0("\r\n>");
 		}
@@ -443,10 +427,9 @@ void ISR_TIMER4(void) interrupt 16 //Routine interruption overflow timer 4
 		condition_timer4 = 0;
 		out_servo = 0;
 	}
-	
-	TL4 = RCAP4L;
-	TH4 = RCAP4H;
 	T4CON &=~0x80;
+	TL4 = RCAP4L;
+  TH4 = RCAP4H;
 }
 
 void finConversion() interrupt 15 {
@@ -457,7 +440,8 @@ void finConversion() interrupt 15 {
 void main(){	
 	init();
 	oscillo();
-	config_Timers();
+	config_Timer_1();
+	config_Timer_2();
 	config_Timer_3();
 	config_Timer_4();
 	config_Comparator();
