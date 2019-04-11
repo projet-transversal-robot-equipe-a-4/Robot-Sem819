@@ -1,14 +1,20 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Apr 09 13:08:06 2019
+Created on Thu Apr 11 08:10:08 2019
 
+@author: jean-baptiste.porret
+"""
+
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Apr 09 13:08:06 2019
 @author: Utilisateur
 """
 
 import json, ast
 global ListType, ListCoordObst, ListXObst, ListYObst,ListX_obst,ListY_obst
 global ListCoord_terrain,ListX_terrain,ListY_terrain,Depart, collision, CurrentX, CurrentY
-global CheckX, CheckY, pasMap, FieldX, FieldY, inclusion
+global CheckX, CheckY, pasMap, FieldX, FieldY, inclusion, CurrentX, CurrentY
 
 def getDataEnv():
     global ListX_obst,ListY_obst
@@ -43,15 +49,14 @@ def getDataEnv():
         ListXObst.insert(i,ListX_obst_copy)
         ListYObst.insert(i,ListY_obst_copy)
         del ListX_obst[:]
-        del ListY_obst[:]
-    print(ListYObst)  
+        del ListY_obst[:]  
     for data in descriptionEnv['terrain_evolution']:
         ListCoord_terrain.append(data)
     for i in range(len(ListCoord_terrain)):
         ListX_terrain.append(ListCoord_terrain[i]['point']['x'])     
         ListY_terrain.append(ListCoord_terrain[i]['point']['y'])
 
-    
+        
 
 def getDataEvol(): 
     evolutionBase = json.load(open('evolutionBase.json'))
@@ -62,12 +67,32 @@ def getDataEvol():
     Arrivee.append(evolutionBase['arrivee']['angle'])
     PosTir = [evolutionBase['position-tir_cible']['coordonnees']['x'],evolutionBase['position-tir_cible']['coordonnees']['y']]
     PosTir.append(evolutionBase['position-tir_cible']['angle'])
+    EtapeX.append(Depart[0])
+    EtapeY.append(Depart[1])
     for data in evolutionBase['etapes']:
         ListEtapes.append(data['coordonnees'])
     for i in range(len(ListEtapes)):
         EtapeX.append(ListEtapes[i]['x'])
         EtapeY.append(ListEtapes[i]['y'])
-        
+    EtapeX.append(Arrivee[0])
+    EtapeY.append(Arrivee[1])
+#def ZoneValide(ListX_terrain,ListY_terrain):
+#    #for i in range(len(ListX_terrain)):
+#     ListX_terrain = list(set(ListX_terrain))
+#     ListY_terrain = list(set(ListY_terrain))
+#     ListX_terrain.sort()
+#     ListY_terrain.sort()
+#     print(ListX_terrain,ListY_terrain)
+#     for i in range(len(FieldX)):
+#         for j in range(len(FieldY)):
+#             if (FieldX[i] >= ListX_terrain[0] and FieldX[i] <= ListX_terrain[1] and FieldY[j] >= ListY_terrain[0] and FieldY[j] <= ListY_terrain[1]): 
+#                 ZoneX.append(FieldX[i])
+#                 ZoneY.append(FieldY[j])
+#     print(FieldX)
+#     print(FieldY)
+#     print(len(FieldX))
+             
+
 def Mappage():    
     global inclusion
     Xmax = max(ListX_terrain)
@@ -79,14 +104,69 @@ def Mappage():
     for j in range(Ymin,Ymax+pasMap,pasMap):
         FieldY.append(j)
     for i in range(len(ListType)):
-        for j in range(len(FieldY)+1):
-            for k in range(len(FieldX)+1):
-                CheckInside(ListXObst[i][1],ListXObst[i][0],ListYObst[i][1],ListYObst[i][0],FieldX[k],FieldX[k+1],FieldY[j],FieldY[j+1])
+        for j in range(len(FieldY)-1):
+            for k in range(len(FieldX)-1):
+                CheckInside(ListXObst[i][1],ListXObst[i][0],ListYObst[i][1],ListYObst[i][0],FieldX[k],FieldX[k+1],FieldY[j],FieldY[j+1])             
                 if (inclusion == True):
                     MapObstX.append(FieldX[k])
                     MapObstY.append(FieldY[j])
-                    
+
+
+def CheckStep(EtapeX,EtapeY,pasX,pasY):
+    global CheckX,CheckY, CurrentX, CurrentY
+    sortie1X = False
+    sortie2X = False
+    sortie1Y = False
+    sortie2Y = False
+    CheckX = CurrentX
+    CheckY = CurrentY
+    while(CheckX != EtapeX):
+        if(CheckX in MapObstX and CheckY in MapObstY):
+            sortie1X = True
+            break            
+        CheckX += pasX
+    if(sortie1X==False):
+        while(CheckY != EtapeY):
+            if(CheckX in MapObstX and CheckY in MapObstY):
+                sortie1Y = true
+                break            
+            CheckY += pasY
+        CheckX = CurrentX
+        CheckY = CurrentY
+        while(CheckY != EtapeY):
+            if(CheckX in MapObstX and CheckY in MapObstY):
+                sortie2X = True
+                break            
+            CheckX += pasMap
+        if(sortie2X==False):
+            while(CheckY != EtapeY):
+                if(CheckX in MapObstX and CheckY in MapObstY):
+                    sortie2Y
+                    break            
+                CheckY += pasMap
+        return sortie1X, sortie1Y, sortie2X, sortie2Y
+        
+#def Avancer(X_go,Y_go):
+#    Current_X
             
+            
+def DeplacementParcours():
+    global CurrentX,CurrentY, Depart
+    CurrentX = EtapeX[0]
+    CurrentY = EtapeY[0]
+    for etape in range(len(EtapeX)-1):    
+        if(CurrentX <= EtapeX[etape] and CurrentY <= EtapeY[etape]):
+            CheckStep(EtapeX[etape],EtapeY[etape+1],5,5)
+            #if verifie == True
+                #Avancer(,)
+        if(CurrentX <= EtapeX[etape] and CurrentY > EtapeY[etape]):
+            CheckStep(EtapeX[etape],EtapeY[etape+1],5,-5)            
+        if(CurrentX > EtapeX[etape] and CurrentY <= EtapeY[etape]):
+            CheckStep(EtapeX[etape],EtapeY[etape+1],-5,5)    
+        if(CurrentX > EtapeX[etape] and CurrentY > EtapeY[etape]):
+            CheckStep(EtapeX[etape],EtapeY[etape+1],-5,-5)
+
+#print(len(MapObstX))      
 def CheckInside(X0space,X1space,Y0space,Y1space,X0objet,X1objet,Y0objet,Y1objet):
     global inclusion
     inclusion = False   
@@ -95,6 +175,12 @@ def CheckInside(X0space,X1space,Y0space,Y1space,X0objet,X1objet,Y0objet,Y1objet)
     else:
         inclusion = False
     return inclusion
+    
+
+        
+
+
+        
 #def CheckObstacles(x,y):
 #    for i in range(ListType):
 #        if(ListType[i] == 'cercle'):
@@ -144,6 +230,11 @@ FieldX = []
 FieldY = []
 MapObstX = []
 MapObstY = []
+inclusion = False
+ZoneX = []
+ZoneY = []
 getDataEnv()
 getDataEvol()
 Mappage()
+DeplacementParcours()
+#ZoneValide(ListX_terrain,ListY_terrain)
